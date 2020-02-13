@@ -168,7 +168,21 @@ C是一个预先给定的参数, 来平衡两项的权值.
 
 所以, soft margin下的SVM问题为:
 
-15. $min_{\lambda} \ \frac{1}{2}\sum_i\sum_j\lambda_i\lambda_jy_iy_jX_iX_j - \sum_i\lambda_i$ 其中, $0 \leq \lambda_i \geq C$, $\sum_i\lambda_iy_i=0$.
+15. $min_{\lambda} \ \frac{1}{2}\sum_i\sum_j\lambda_i\lambda_jy_iy_jX_iX_j - \sum_i\lambda_i$ 其中, $0 \leq \lambda_i \leq C$, $\sum_i\lambda_iy_i=0$.
+
+#### hinge loss
+
+我们将公式11的约束条件放到目标函数里面, 就可以得到hinge loss版本的SVM解释:
+
+16. $\min \frac{1}{2}\|W\|^2 + C\sum_i\max\{0, 1-y_i(WX_i+b)\}$
+
+这个式子的解释很简单: 左边的二次项可以看成是L2的正则项, 右边的 $max\{*\}$ 表示, 当样本正确分类且距离分类平面大于最大间隔的时候(这时有: $y_i(WX_i+b) \geq 1$), 其loss为0; 否则, loss随样本的偏离位置线性增加.
+
+个人认为hinge loss的形式更容易理解, 但是由于 $max\{0, x\}$ 在 $x=0$处不可导,  理论上会有一些问题, 但是实际操作中, 直接用梯度下降法即可, 就像ReLU, 在 $x=0$ 处也不可导, 但是梯度下降同样有效.
+
+这
+
+
 
 参考:
 
