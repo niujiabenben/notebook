@@ -20,9 +20,7 @@ ctypes是Python标准库提供的调用动态链接库的模块, 使用这个模
 
 //// 注意, ctypes只能识别c接口, 所以这里必须用extern "C"
 extern "C" double sum(const double* vec, const int N) {
-
   return std::accumulate(vec, vec + N, 0.0);
-
 }
 ```
 
@@ -30,7 +28,6 @@ extern "C" double sum(const double* vec, const int N) {
 
 ```shell
 g++ -g -Wall -fpic -O3 -c -o ext.o ext.cpp
-
 g++ -shared -o libext.so ext.o
 ```
 
@@ -44,51 +41,27 @@ ext = cdll.LoadLibrary("libext.so")
 
 ### 指定输入输出类型, 这里POINT是一个类型包装器, 将基础类型包装成指针类型
 ext.sum.argtypes = [POINTER(c_double), c_int]
-
 ext.sum.restype = c_double
 
 ### 调用动态链接库的函数, 注意这里不能直接传递vec, 因为vec是list类型,
 ### 而sum函数需要的是double*. 实际上, 除了基础类型, 指针类型和结构体
 ### 都需要通过ctypes中对应的结构进行封装.
 vec = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-
 value = ext.sum((c_double * len(vec))(*vec), len(vec))
-
 
 ### 这里我们也可以通过numpy来封装.
 arr = np.array(vec, dtype=np.double)
 value = ext.sum(arr.ctypes.data_as(POINTER(c_double)), len(arr))
 
-
 ### 我们可以直接指定numpy.ndarray的类型, 这样可以直接传递numpy.ndarray
 ext.sum.argtypes = [
     np.ctypeslib.ndpointer(dtype=np.double, ndim=1, flags="C"), 
     c_int
-
 ]
 value = ext.sum(arr, len(arr))
 ```
 
-注意: **我们在测试时发现, 采用numpy来封装时, 有一些类型可能得不到正确的结果.** 例子如下:
-
-```python
-### float类型的sum()函数
-extern "C" float sum(const float* vec, const int N) {
-  return std::accumulate(vec, vec + N, 0.0f);
-}
-
-### 指定输入为float数组, 输出为float类型
-ext.sum.argtypes = [POINTER(c_float), c_int]
-ext.sum.restype = c_float
-
-### 通过numpy来封装, 指定数据类型为np.float. 
-### 但是, 传递到c中的sum函数之后, 似乎其内存分布仍为double*类型. 如果以
-### float*类型去取数据, 则会得到错误的结果.
-arr = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], dtype=np.float)
-value = ext.sum(arr.ctypes.data_as(POINTER(c_float)), len(arr))
-```
-
-我倾向于这是一个numpy.ctypes的一个bug, 这里并不去深究. 只是在使用的时候需要格外注意.
+注意: **np.float, np.float64和np.double对应c++中的double类型, np.float32才对应c++中的float类型.**
 
 ### Struct和内存管理
 
@@ -223,9 +196,3 @@ size = ext.copy(input_buffer, len(input_buffer), output_buffer, len(output_buffe
 调用结束后, `output_buffer.value`为NULL结束的字符串, `output_buffer.raw`为bytes类型. 
 
 如果传入的参数较为复杂, 比如是一个dict, 则较难将其重新定义成`Structure`类型. 这时可以做一个序列化, 比如将dict转化成json格式的字符串, 或者自己在python上写一个序列化函数, 然后在c端写一个反序列化函数.
-
-
-
-
-
-
